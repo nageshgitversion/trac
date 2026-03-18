@@ -39,6 +39,8 @@ spring:
     baseline-on-migrate: true
     repair-on-migrate: true
     out-of-order: false
+    connect-retries: 5
+    connect-retries-interval: 10
 
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
