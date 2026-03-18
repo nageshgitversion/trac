@@ -274,7 +274,7 @@ public class TransactionService {
         BigDecimal netSavings     = income.subtract(expense);
         int        savingsRate    = income.compareTo(BigDecimal.ZERO) > 0
             ? netSavings.multiply(BigDecimal.valueOf(100))
-                         .divide(income, 0, RoundingMode.HALF_UP)
+                         .divide(income, 0, RoundingMode.DOWN)
                          .intValue()
             : 0;
 

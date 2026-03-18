@@ -318,9 +318,9 @@ class PortfolioServiceTest {
         void refreshCurrentValue_RecalculatesCorrectly() {
             equityMfHolding.setCurrentPrice(new BigDecimal("124.50"));
             equityMfHolding.refreshCurrentValue();
-            // 4980 × 124.50 = 619,810.00 (rounded to 2dp)
+            // 4980 × 124.50 = 620,010.00
             assertThat(equityMfHolding.getCurrentValue())
-                .isEqualByComparingTo("619911.00");
+                .isEqualByComparingTo("620010.00");
         }
 
         @Test

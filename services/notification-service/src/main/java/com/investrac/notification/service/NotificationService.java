@@ -186,14 +186,14 @@ public class NotificationService {
             case WALLET_LOW_BALANCE                        -> prefs.isWalletAlertNotif();
             case PORTFOLIO_SYNCED                          -> prefs.isPortfolioNotif();
             case AI_INSIGHT                                -> prefs.isAiInsightNotif();
-            case WELCOME, GENERAL                          -> true;
+            case WELCOME, PASSWORD_RESET, GENERAL          -> true;
         };
     }
 
     private boolean isEmailWorthy(Notification.NotificationType type) {
         // Only send emails for high-priority events
         return switch (type) {
-            case TRANSACTION_FAILED, EMI_DUE, WALLET_LOW_BALANCE, WELCOME -> true;
+            case TRANSACTION_FAILED, EMI_DUE, WALLET_LOW_BALANCE, WELCOME, PASSWORD_RESET -> true;
             default -> false;
         };
     }

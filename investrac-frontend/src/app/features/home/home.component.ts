@@ -227,7 +227,8 @@ export class HomeComponent implements OnInit {
     this.transactionService.getRecent(8).subscribe({
       next: res => {
         if (res.success && res.data) this.recentTx.set(res.data);
-      }
+      },
+      error: () => {}
     });
 
     // Load monthly summary
@@ -239,7 +240,7 @@ export class HomeComponent implements OnInit {
             income: d.totalIncome, expense: d.totalExpense,
             investment: d.totalInvestment, netSavings: d.netSavings,
             savingsRate: d.savingsRatePercent,
-            txCount: { income: d.expenseBreakdown?.length ?? 0 }
+            txCount: { income: 0 }
           };
         }
         this.loading.set(false);

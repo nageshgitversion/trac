@@ -225,8 +225,6 @@ class AiServiceTest {
             when(claudeClient.generateInsights(any(), any()))
                 .thenReturn("Sorry, I cannot generate insights right now."); // non-JSON response
 
-            when(insightRepository.saveAll(anyList())).thenAnswer(i -> i.getArgument(0));
-
             List<InsightResponse> result = aiService.generateInsights(USER_ID);
 
             // Must not throw — returns empty

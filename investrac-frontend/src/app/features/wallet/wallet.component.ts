@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectionStrategy, signal } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { NgClass } from '@angular/common';
 import { WalletService } from '../../core/services/wallet.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -38,7 +38,7 @@ import { Wallet, WalletEnvelope } from '../../core/models/wallet.model';
             <div class="form-group">
               <label class="form-label">Monthly Income (₹)</label>
               <input class="form-input" type="number" inputmode="decimal"
-                formControlName="income" placeholder="115000" />
+                formControlName="income" placeholder="115000" min="1" />
             </div>
 
             <div class="section-header" style="margin-top:16px">
@@ -272,6 +272,3 @@ export class WalletComponent implements OnInit {
     return 'var(--color-success)';
   }
 }
-
-// Needed for ngModel in template
-import { FormsModule } from '@angular/forms';
