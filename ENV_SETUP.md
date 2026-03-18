@@ -214,6 +214,38 @@ docker-compose down
 docker-compose down -v
 ```
 
+### Use Local MySQL Instead of Docker MySQL
+If you already have MySQL installed locally and want to skip the Docker MySQL container:
+
+```bash
+# Start all services except Docker MySQL — connects to your local MySQL
+docker-compose -f docker-compose.yml -f docker-compose.local-mysql.yml up -d
+```
+
+**Prerequisites:**
+1. MySQL 8.0+ running locally on port 3306
+2. A user that allows connections from Docker containers:
+   ```sql
+   CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
+   GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+   FLUSH PRIVILEGES;
+   ```
+3. On Linux, ensure MySQL binds to `0.0.0.0`:
+   ```bash
+   # In /etc/mysql/mysql.conf.d/mysqld.cnf
+   bind-address = 0.0.0.0
+   sudo systemctl restart mysql
+   ```
+
+You can also override credentials via `.env`:
+```bash
+DB_USER=your_user
+DB_PASSWORD=your_password
+```
+
+If running services **locally** (not in Docker), they already default to
+`localhost:3306` — just set your `.env` and start the JARs directly.
+
 ### Build All Modules
 ```bash
 mvn clean install -DskipTests
@@ -275,6 +307,28 @@ mysql -h localhost -u investrac -p -e "SELECT 1;"
 
 # Or with Docker
 docker exec investrac-mysql mysql -u investrac -p -e "SELECT 1;"
+```
+
+### Local MySQL Not Reachable from Docker
+```bash
+# 1. Verify MySQL is running locally
+mysql -u root -p -e "SELECT 1;"
+
+# 2. Check MySQL is listening on all interfaces (not just 127.0.0.1)
+sudo netstat -tlnp | grep 3306
+# Should show 0.0.0.0:3306, NOT 127.0.0.1:3306
+
+# 3. If bound to 127.0.0.1, edit /etc/mysql/mysql.conf.d/mysqld.cnf:
+#    bind-address = 0.0.0.0
+#    Then: sudo systemctl restart mysql
+
+# 4. Verify user has remote access permissions
+mysql -u root -p -e "SELECT host, user FROM mysql.user WHERE user='root';"
+# Should include '%' host
+
+# 5. Test from inside a Docker container
+docker run --rm --add-host=host.docker.internal:host-gateway mysql:8.0 \
+  mysql -h host.docker.internal -u root -proot -e "SELECT 1;"
 ```
 
 ### Kafka Connection Issues

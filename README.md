@@ -18,11 +18,19 @@ chmod +x scripts/generate-jwt-keys.sh
 ```bash
 cp .env.example .env
 # Edit .env with your values
-docker-compose up -d zookeeper kafka redis zipkin \
-  mysql-auth mysql-wallet mysql-transaction mysql-portfolio mysql-account
+docker-compose up -d
 ```
 
-### 3. Start Services (in order)
+### 3. Use Local MySQL (Optional)
+If you prefer to use your own local MySQL instead of the Docker container:
+```bash
+# Start everything except MySQL — services connect to your local MySQL
+docker-compose -f docker-compose.yml -f docker-compose.local-mysql.yml up -d
+```
+> **Prerequisites:** MySQL 8.0+ running locally on port 3306 with a user
+> accessible from Docker. See [Local MySQL Setup](#local-mysql-setup) below.
+
+### 4. Start Services (in order)
 ```bash
 docker-compose up -d eureka-server
 docker-compose up -d config-server
@@ -69,3 +77,40 @@ Angular PWA → Nginx → API Gateway (8080)
 - JWT private key only in auth-service
 - All passwords BCrypt strength 12
 - Run OWASP check: `mvn verify -P security-check`
+
+## Local MySQL Setup
+
+If you want to connect services to your **local MySQL** instead of the Docker container:
+
+### Option A: Services in Docker, MySQL on Host
+Use the provided override file:
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.local-mysql.yml up -d
+```
+
+**Prepare your local MySQL:**
+```sql
+-- Allow connections from Docker containers
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'root';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+```
+
+> Databases (`investrac_auth`, `investrac_user`, etc.) are created
+> automatically via `createDatabaseIfNotExist=true` in the JDBC URL.
+
+### Option B: Run Services Locally (No Docker for Services)
+The `application.yml` files already default to `localhost`:
+```bash
+source ./scripts/load-env.sh   # loads .env (DB_HOST=localhost)
+mvn clean install -DskipTests
+java -jar services/auth-service/target/auth-service-1.0.0-SNAPSHOT.jar
+```
+
+### Linux Note
+On Linux, `host.docker.internal` is mapped via `extra_hosts` in the override file.
+If you have issues, ensure your MySQL `bind-address` is set to `0.0.0.0`
+in `/etc/mysql/mysql.conf.d/mysqld.cnf` and restart MySQL:
+```bash
+sudo systemctl restart mysql
+```
