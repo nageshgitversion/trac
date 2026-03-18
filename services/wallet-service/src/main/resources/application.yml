@@ -23,6 +23,8 @@ spring:
     locations: classpath:db/migration
     repair-on-migrate: true
     out-of-order: false
+    connect-retries: 5
+    connect-retries-interval: 10
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
     consumer:

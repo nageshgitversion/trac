@@ -30,6 +30,8 @@ spring:
     baseline-on-migrate: true
     repair-on-migrate: true
     out-of-order: false
+    connect-retries: 5
+    connect-retries-interval: 10
 
   data:
     redis:
