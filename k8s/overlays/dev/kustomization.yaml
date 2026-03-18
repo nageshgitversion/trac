@@ -6,6 +6,12 @@ bases:
 
 namespace: investrac-dev
 
+configMapGenerator:
+  - name: investrac-config
+    behavior: merge
+    literals:
+      - DB_HOST=localhost
+
 patches:
   - patch: |-
       - op: replace

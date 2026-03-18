@@ -13,5 +13,6 @@ data:
   EUREKA_USER:         "eureka-admin"
   CONFIG_SERVER_USER:  "config-admin"
   ADMIN_USER:          "admin"
+  DB_HOST:             "mysql"
   DB_USER:             "investrac"
   TZ:                  "Asia/Kolkata"
