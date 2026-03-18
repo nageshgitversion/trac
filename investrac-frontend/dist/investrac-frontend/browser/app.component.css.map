@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["angular:styles/component:css;827464123baf271b8701f96ac5511fe8ef089e254f135c78384052ca5da15a82;/home/runner/work/trac/trac/investrac-frontend/src/app/app.component.ts"],
-  "sourcesContent": ["\n    :host { display: block; }\n    .app-shell {\n      width: 100%;\n      max-width: 430px;\n      min-height: 100dvh;\n      margin: 0 auto;\n      background: var(--color-bg);\n      position: relative;\n      overflow-x: hidden;\n    }\n  "],
-  "mappings": ";AACI;AAAQ,WAAS;AAAO;AACxB,CAAC;AACC,SAAO;AACP,aAAW;AACX,cAAY;AACZ,UAAQ,EAAE;AACV,cAAY,IAAI;AAChB,YAAU;AACV,cAAY;AACd;",
-  "names": []
-}

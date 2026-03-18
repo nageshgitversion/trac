@@ -29,3 +29,8 @@ logs/
 
 # ═══ Docker ═══
 docker/mysql/data/
+
+# ═══ Angular / Node ═══
+investrac-frontend/node_modules/
+investrac-frontend/dist/
+investrac-frontend/.angular/cache/
