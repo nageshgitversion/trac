@@ -83,10 +83,12 @@ Angular PWA → Nginx → API Gateway (8080)
 If you want to connect services to your **local MySQL** instead of the Docker container:
 
 ### Option A: Services in Docker, MySQL on Host
-Use the provided override file:
+Use the provided override file — no MySQL container is needed:
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.local-mysql.yml up -d
 ```
+The override removes the MySQL container dependency and points all services
+to `host.docker.internal` so they connect to your host MySQL directly.
 
 **Prepare your local MySQL:**
 ```sql
@@ -106,6 +108,15 @@ source ./scripts/load-env.sh   # loads .env (DB_HOST=localhost)
 mvn clean install -DskipTests
 java -jar services/auth-service/target/auth-service-1.0.0-SNAPSHOT.jar
 ```
+
+### Option C: Kubernetes (Dev Overlay)
+The dev overlay sets `DB_HOST=localhost` via ConfigMap, so services
+connect to a local MySQL without needing separate MySQL K8s manifests:
+```bash
+kubectl apply -k k8s/overlays/dev
+```
+To point at a different host, patch `DB_HOST` in the dev overlay's
+`configMapGenerator`.
 
 ### Linux Note
 On Linux, `host.docker.internal` is mapped via `extra_hosts` in the override file.
