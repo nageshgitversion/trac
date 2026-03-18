@@ -56,6 +56,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       kafka:
@@ -74,6 +76,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
@@ -90,6 +94,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
@@ -108,6 +114,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
@@ -124,6 +132,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
@@ -140,6 +150,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
@@ -156,6 +168,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
@@ -172,6 +186,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
