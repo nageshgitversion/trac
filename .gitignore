@@ -1,0 +1,31 @@
+# ═══ Secrets — NEVER commit these ═══
+.env
+*.env.local
+keys/
+**/src/main/resources/application-prod.yml
+**/src/main/resources/application-staging.yml
+
+# ═══ Build outputs ═══
+target/
+*.jar
+*.war
+*.class
+
+# ═══ IDE ═══
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# ═══ OS ═══
+.DS_Store
+Thumbs.db
+
+# ═══ Logs ═══
+*.log
+logs/
+
+# ═══ Docker ═══
+docker/mysql/data/

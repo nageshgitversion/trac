@@ -1,0 +1,57 @@
+package com.investrac.ai.exception;
+
+import com.investrac.ai.client.ClaudeApiClient.ClaudeApiException;
+import com.investrac.common.dto.ErrorCodes;
+import com.investrac.common.response.ApiResponse;
+import io.micrometer.tracing.Tracer;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice @Slf4j @RequiredArgsConstructor
+public class GlobalExceptionHandler {
+
+    private final Tracer tracer;
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(e ->
+            errors.put(((FieldError) e).getField(), e.getDefaultMessage()));
+        return ResponseEntity.badRequest().body(ApiResponse.validationError(errors));
+    }
+
+    @ExceptionHandler(ClaudeApiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleClaude(ClaudeApiException ex) {
+        // Do NOT expose Claude API error details to client — log internally only
+        log.error("Claude API error (not exposed to client): {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(ApiResponse.error(ErrorCodes.SERVICE_UNAVAILABLE,
+                "AI advisor is temporarily unavailable. Please try again later."));
+    }
+
+    @ExceptionHandler(AiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAi(AiException ex) {
+        log.warn("AI error [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        return ResponseEntity.status(ex.getHttpStatus())
+            .body(ApiResponse.error(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ApiResponse<Void>> handleAll(Exception ex) {
+        String traceId = tracer.currentSpan() != null
+            ? tracer.currentSpan().context().traceId() : "unknown";
+        log.error("Unhandled [traceId={}]: {}", traceId, ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(ApiResponse.error(ErrorCodes.INTERNAL_ERROR,
+                "Unexpected error. TraceId: " + traceId));
+    }
+}

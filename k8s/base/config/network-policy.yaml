@@ -1,0 +1,80 @@
+# ═══════════════════════════════════════════════════════════════════════
+# INVESTRAC Network Policies
+#
+# Security principle: Services are NOT directly reachable from outside.
+# Only the API Gateway can call services.
+# Services can call each other only for defined flows.
+# ═══════════════════════════════════════════════════════════════════════
+
+# ── Allow API Gateway to reach all services ──
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-services
+  namespace: investrac
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: investrac
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: api-gateway
+  policyTypes:
+    - Ingress
+---
+# ── Allow services to reach Eureka for registration ──
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-services-to-eureka
+  namespace: investrac
+spec:
+  podSelector:
+    matchLabels:
+      app: eureka-server
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: investrac
+  policyTypes:
+    - Ingress
+---
+# ── Allow services to reach Kafka ──
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kafka-access
+  namespace: investrac
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: investrac
+  policyTypes:
+    - Ingress
+---
+# ── Allow Prometheus to scrape all service metrics ──
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: investrac
+spec:
+  podSelector: {}       # All pods
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8080   # Will match any port in range via scrape annotations
+  policyTypes:
+    - Ingress

@@ -1,0 +1,141 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: auth-service
+
+  # Config Server
+  config:
+    import: optional:configserver:http://${CONFIG_SERVER_USER:config-admin}:${CONFIG_SERVER_PASSWORD:config-secret}@${CONFIG_SERVER_HOST:localhost}:8888
+
+  # Database
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/investrac_auth?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata&createDatabaseIfNotExist=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: AuthServicePool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: none     # Flyway manages schema — NEVER use create/create-drop in prod
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: false
+        use_sql_comments: false
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+    repair-on-migrate: true
+    out-of-order: false
+
+  # Kafka (producer only for auth-service)
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all          # Wait for all replicas — ensures durability
+      retries: 3
+      properties:
+        enable.idempotence: true  # Exactly-once producer semantics
+        max.in.flight.requests.per.connection: 5
+
+  # Redis (rate limiting + caching)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          min-idle: 2
+
+# Eureka
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_USER:eureka-admin}:${EUREKA_PASSWORD:eureka-secret-2024}@${EUREKA_HOST:localhost}:8761/eureka/
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+    metadata-map:
+      version: "@project.version@"
+      description: "INVESTRAC Authentication Service"
+
+# JWT — RS256 keys (base64 encoded)
+security:
+  jwt:
+    private-key: ${JWT_PRIVATE_KEY}    # From AWS Secrets Manager / env variable
+    public-key:  ${JWT_PUBLIC_KEY}     # Same key shared with API Gateway + other services
+    access-token-expiry: 900000        # 15 minutes (ms)
+    refresh-token-expiry: 2592000      # 30 days (seconds)
+
+# Spring Boot Admin
+spring.boot.admin.client:
+  url: http://${ADMIN_SERVER_HOST:localhost}:9090
+  username: ${ADMIN_USER:admin}
+  password: ${ADMIN_PASSWORD:admin-secret}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+  endpoint:
+    health:
+      show-details: when-authorized
+  tracing:
+    sampling:
+      probability: 1.0    # 100% in dev, reduce to 0.1 in prod
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Logging — JSON format for ELK Stack
+logging:
+  level:
+    com.investrac: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-}/%X{spanId:-}] [%thread] %-5level %logger{36} - %msg%n"
+
+# SpringDoc
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+  info:
+    title: "INVESTRAC Auth Service API"
+    version: "1.0.0"
+    description: "Authentication, JWT, user registration and login"

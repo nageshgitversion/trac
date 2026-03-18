@@ -1,0 +1,163 @@
+# ═══════════════════════════════════════════════════════════════
+# INVESTRAC CI Pipeline
+# Triggers: push to main/develop, pull requests
+# ═══════════════════════════════════════════════════════════════
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  JAVA_VERSION: '17'
+  MAVEN_OPTS: '-Xmx1024m'
+
+jobs:
+
+  # ─────────────────────────────────────────
+  # Build & Test all modules
+  # ─────────────────────────────────────────
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test-root
+          MYSQL_DATABASE: investrac_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      redis:
+        image: redis:7.2-alpine
+        ports: ['6379:6379']
+        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build common modules first
+        run: |
+          mvn install -pl common/common-dto,common/common-events,common/common-security \
+            -DskipTests -q
+
+      - name: Build & test all services
+        run: mvn test --no-transfer-progress
+        env:
+          DB_HOST: localhost
+          DB_USER: root
+          DB_PASSWORD: test-root
+          JWT_PRIVATE_KEY: ${{ secrets.JWT_PRIVATE_KEY_TEST }}
+          JWT_PUBLIC_KEY: ${{ secrets.JWT_PUBLIC_KEY_TEST }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/target/surefire-reports/*.xml'
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ─────────────────────────────────────────
+  # OWASP Dependency Security Check
+  # ─────────────────────────────────────────
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+      - name: OWASP Dependency Check
+        run: mvn verify -P security-check -DskipTests --no-transfer-progress
+        continue-on-error: true    # Don't block merge but flag issues
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report
+          path: '**/target/dependency-check-report.html'
+
+  # ─────────────────────────────────────────
+  # Build & Push Docker images (only on main)
+  # ─────────────────────────────────────────
+  docker-build:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+    if: github.ref == 'refs/heads/main'
+
+    strategy:
+      matrix:
+        service:
+          - infrastructure/eureka-server
+          - infrastructure/config-server
+          - infrastructure/api-gateway
+          - infrastructure/admin-server
+          - services/auth-service
+          - services/wallet-service
+          - services/transaction-service
+          - services/account-service
+          - services/portfolio-service
+          - services/ai-service
+          - services/notification-service
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build JAR
+        run: |
+          # Build common deps first
+          mvn install -pl common/common-dto,common/common-events,common/common-security -DskipTests -q
+          # Build target service
+          SERVICE_NAME=$(basename ${{ matrix.service }})
+          mvn package -pl ${{ matrix.service }} -DskipTests -q
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            investrac/$(basename ${{ matrix.service }}):latest
+            investrac/$(basename ${{ matrix.service }}):${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

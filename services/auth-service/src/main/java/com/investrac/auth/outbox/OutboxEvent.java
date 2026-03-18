@@ -1,0 +1,47 @@
+package com.investrac.auth.outbox;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = "outbox_events", indexes = {
+    @Index(name = "idx_outbox_status", columnList = "status"),
+    @Index(name = "idx_outbox_created", columnList = "created_at")
+})
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+public class OutboxEvent {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "topic", nullable = false, length = 100)
+    private String topic;
+
+    @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
+    private String payload;      // JSON serialized event
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "status", nullable = false, length = 20)
+    private OutboxStatus status = OutboxStatus.PENDING;
+
+    @Column(name = "published_at")
+    private Instant publishedAt;
+
+    @Builder.Default
+    @Column(name = "retry_count")
+    private int retryCount = 0;
+
+    @Column(name = "last_error", length = 500)
+    private String lastError;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private Instant createdAt;
+
+    public enum OutboxStatus { PENDING, PUBLISHED, FAILED }
+}

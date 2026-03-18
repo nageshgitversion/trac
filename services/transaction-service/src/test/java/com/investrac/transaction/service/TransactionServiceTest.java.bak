@@ -1,0 +1,239 @@
+package com.investrac.transaction.service;
+
+import com.investrac.common.events.WalletDebitedEvent;
+import com.investrac.transaction.dto.request.CreateTransactionRequest;
+import com.investrac.transaction.dto.response.MonthlySummaryResponse;
+import com.investrac.transaction.dto.response.TransactionResponse;
+import com.investrac.transaction.entity.Transaction;
+import com.investrac.transaction.entity.Transaction.TransactionStatus;
+import com.investrac.transaction.entity.Transaction.TransactionType;
+import com.investrac.transaction.exception.TransactionException;
+import com.investrac.transaction.mapper.TransactionMapper;
+import com.investrac.transaction.outbox.TransactionOutboxService;
+import com.investrac.transaction.repository.SagaProcessedEventRepository;
+import com.investrac.transaction.repository.TransactionRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("TransactionService Unit Tests")
+class TransactionServiceTest {
+
+    @Mock TransactionRepository        txRepository;
+    @Mock SagaProcessedEventRepository sagaRepo;
+    @Mock TransactionOutboxService     outboxService;
+    @Mock TransactionMapper            mapper;
+
+    @InjectMocks
+    TransactionService txService;
+
+    private Transaction mockTx;
+    private TransactionResponse mockResponse;
+
+    @BeforeEach
+    void setUp() {
+        mockTx = Transaction.builder()
+            .id(1L).userId(100L).walletId(200L)
+            .type(TransactionType.EXPENSE)
+            .category("Food & Dining")
+            .name("Swiggy Order")
+            .amount(new BigDecimal("-450.00"))
+            .txDate(LocalDate.now())
+            .status(TransactionStatus.PENDING)
+            .sagaId("saga-uuid-123")
+            .build();
+
+        mockResponse = TransactionResponse.builder()
+            .id(1L).userId(100L)
+            .type("EXPENSE").category("Food & Dining")
+            .name("Swiggy Order")
+            .amount(new BigDecimal("-450.00"))
+            .status("PENDING")
+            .build();
+    }
+
+    // ─── CREATE ────────────────────────────────────
+
+    @Test
+    @DisplayName("createTransaction: expense saved as PENDING + SAGA published")
+    void create_Expense_SavedPending_SagaPublished() {
+        CreateTransactionRequest req = new CreateTransactionRequest();
+        req.setName("Swiggy Order");
+        req.setType(TransactionType.EXPENSE);
+        req.setCategory("Food & Dining");
+        req.setAmount(new BigDecimal("450.00"));
+        req.setTxDate(LocalDate.now());
+        req.setWalletId(200L);
+
+        when(txRepository.save(any(Transaction.class))).thenReturn(mockTx);
+        when(mapper.toResponse(any())).thenReturn(mockResponse);
+        doNothing().when(outboxService).publish(any(), any());
+
+        TransactionResponse result = txService.createTransaction(100L, req);
+
+        assertThat(result.getStatus()).isEqualTo("PENDING");
+        assertThat(result.getName()).isEqualTo("Swiggy Order");
+        // SAGA event must be published
+        verify(outboxService, times(1)).publish(eq("investrac.transaction.created"), any());
+        verify(txRepository, times(1)).save(any(Transaction.class));
+    }
+
+    @Test
+    @DisplayName("createTransaction: income saved with positive amount")
+    void create_Income_PositiveAmount() {
+        CreateTransactionRequest req = new CreateTransactionRequest();
+        req.setName("TCS Salary");
+        req.setType(TransactionType.INCOME);
+        req.setCategory("Income");
+        req.setAmount(new BigDecimal("115000.00"));
+        req.setTxDate(LocalDate.now());
+        req.setWalletId(200L);
+
+        when(txRepository.save(any(Transaction.class))).thenAnswer(inv -> {
+            Transaction t = inv.getArgument(0);
+            // Income should be positive
+            assertThat(t.getAmount()).isPositive();
+            return mockTx;
+        });
+        when(mapper.toResponse(any())).thenReturn(mockResponse);
+        doNothing().when(outboxService).publish(any(), any());
+
+        txService.createTransaction(100L, req);
+        verify(txRepository).save(any(Transaction.class));
+    }
+
+    // ─── SAGA HANDLING ─────────────────────────────
+
+    @Test
+    @DisplayName("handleWalletDebited: success → transaction marked COMPLETED + event published")
+    void handleWalletDebited_Success_MarksCompleted() {
+        WalletDebitedEvent event = WalletDebitedEvent.success(
+            "saga-uuid-123", 1L, 100L, 200L, new BigDecimal("450.00"));
+
+        when(sagaRepo.existsBySagaId("saga-uuid-123")).thenReturn(false);
+        when(txRepository.updateStatusBySagaId("saga-uuid-123", TransactionStatus.COMPLETED)).thenReturn(1);
+        when(txRepository.findBySagaId("saga-uuid-123")).thenReturn(Optional.of(mockTx));
+        when(sagaRepo.save(any())).thenReturn(null);
+        doNothing().when(outboxService).publish(any(), any());
+
+        txService.handleWalletDebited(event);
+
+        verify(txRepository).updateStatusBySagaId("saga-uuid-123", TransactionStatus.COMPLETED);
+        verify(outboxService).publish(eq("investrac.transaction.completed"), any());
+        verify(sagaRepo).save(any());
+    }
+
+    @Test
+    @DisplayName("handleWalletDebited: failure → transaction marked FAILED + failed event published")
+    void handleWalletDebited_Failure_MarksFailed() {
+        WalletDebitedEvent event = WalletDebitedEvent.failure(
+            "saga-uuid-456", 1L, 100L, 200L, new BigDecimal("450.00"),
+            "WLTH-2003", "Insufficient balance");
+
+        when(sagaRepo.existsBySagaId("saga-uuid-456")).thenReturn(false);
+        when(txRepository.updateStatusBySagaId("saga-uuid-456", TransactionStatus.FAILED)).thenReturn(1);
+        when(txRepository.findBySagaId("saga-uuid-456")).thenReturn(Optional.of(mockTx));
+        when(sagaRepo.save(any())).thenReturn(null);
+        doNothing().when(outboxService).publish(any(), any());
+
+        txService.handleWalletDebited(event);
+
+        verify(txRepository).updateStatusBySagaId("saga-uuid-456", TransactionStatus.FAILED);
+        verify(outboxService).publish(eq("investrac.transaction.failed"), any());
+    }
+
+    @Test
+    @DisplayName("handleWalletDebited: idempotent — already processed sagaId skipped")
+    void handleWalletDebited_AlreadyProcessed_Skipped() {
+        WalletDebitedEvent event = WalletDebitedEvent.success(
+            "already-done", 1L, 100L, 200L, new BigDecimal("450.00"));
+
+        when(sagaRepo.existsBySagaId("already-done")).thenReturn(true);
+
+        txService.handleWalletDebited(event);
+
+        // Should not update any transaction or publish any event
+        verify(txRepository, never()).updateStatusBySagaId(any(), any());
+        verify(outboxService, never()).publish(any(), any());
+    }
+
+    // ─── GET BY ID ─────────────────────────────────
+
+    @Test
+    @DisplayName("getById: returns transaction for correct userId")
+    void getById_Found() {
+        when(txRepository.findByIdAndUserId(1L, 100L)).thenReturn(Optional.of(mockTx));
+        when(mapper.toResponse(mockTx)).thenReturn(mockResponse);
+
+        TransactionResponse result = txService.getById(1L, 100L);
+        assertThat(result.getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("getById: throws NOT_FOUND when tx doesn't belong to userId")
+    void getById_NotFound_Throws() {
+        when(txRepository.findByIdAndUserId(99L, 100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> txService.getById(99L, 100L))
+            .isInstanceOf(TransactionException.class)
+            .hasMessageContaining("not found");
+    }
+
+    // ─── DELETE ───────────────────────────────────
+
+    @Test
+    @DisplayName("deleteTransaction: soft-cancels the transaction")
+    void delete_SoftCancels() {
+        when(txRepository.cancelTransaction(1L, 100L)).thenReturn(1);
+
+        assertThatCode(() -> txService.deleteTransaction(1L, 100L))
+            .doesNotThrowAnyException();
+
+        verify(txRepository).cancelTransaction(1L, 100L);
+    }
+
+    @Test
+    @DisplayName("deleteTransaction: throws NOT_FOUND if tx not found")
+    void delete_NotFound_Throws() {
+        when(txRepository.cancelTransaction(99L, 100L)).thenReturn(0);
+
+        assertThatThrownBy(() -> txService.deleteTransaction(99L, 100L))
+            .isInstanceOf(TransactionException.class);
+    }
+
+    // ─── MONTHLY SUMMARY ──────────────────────────
+
+    @Test
+    @DisplayName("getMonthlySummary: calculates savings rate correctly")
+    void getMonthlySummary_SavingsRate() {
+        when(txRepository.sumIncomeForMonth(100L, 2026, 3))
+            .thenReturn(new BigDecimal("115000.00"));
+        when(txRepository.sumExpenseForMonth(100L, 2026, 3))
+            .thenReturn(new BigDecimal("-38420.00"));
+        when(txRepository.findByUserIdAndMonth(100L, 2026, 3))
+            .thenReturn(List.of());
+        when(txRepository.getCategoryTotals(100L, 2026, 3))
+            .thenReturn(List.of());
+
+        MonthlySummaryResponse summary = txService.getMonthlySummary(100L, 2026, 3);
+
+        assertThat(summary.getTotalIncome()).isEqualByComparingTo("115000.00");
+        assertThat(summary.getTotalExpense()).isEqualByComparingTo("38420.00");
+        assertThat(summary.getNetSavings()).isEqualByComparingTo("76580.00");
+        assertThat(summary.getMonthLabel()).contains("March").contains("2026");
+    }
+}

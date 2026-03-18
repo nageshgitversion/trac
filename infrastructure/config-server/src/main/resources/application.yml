@@ -1,0 +1,43 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  security:
+    user:
+      name: ${CONFIG_SERVER_USER:config-admin}
+      password: ${CONFIG_SERVER_PASSWORD:config-secret}
+  cloud:
+    config:
+      server:
+        git:
+          uri: ${CONFIG_REPO_URI:https://github.com/your-org/investrac-config}
+          default-label: main
+          search-paths: '{application}'
+          clone-on-start: true
+          timeout: 10
+          force-pull: true
+        encrypt:
+          enabled: true
+  profiles:
+    active: git
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_USER:eureka-admin}:${EUREKA_PASSWORD:eureka-secret-2024}@${EUREKA_HOST:localhost}:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,refresh
+
+encrypt:
+  key: ${ENCRYPT_KEY:investrac-encrypt-key-change-in-prod}
+
+logging:
+  level:
+    com.investrac: INFO
+    org.springframework.cloud.config: DEBUG

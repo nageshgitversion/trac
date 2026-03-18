@@ -1,0 +1,10 @@
+# ═══════════════════════════════════════════════════════
+# INVESTRAC Kubernetes Namespace
+# ═══════════════════════════════════════════════════════
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: investrac
+  labels:
+    app.kubernetes.io/part-of: investrac
+    environment: production

@@ -1,0 +1,142 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: notification-service
+
+  config:
+    import: optional:configserver:http://${CONFIG_SERVER_USER:config-admin}:${CONFIG_SERVER_PASSWORD:config-secret}@${CONFIG_SERVER_HOST:localhost}:8888
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:3306/investrac_notification?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata&createDatabaseIfNotExist=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: NotificationServicePool
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    repair-on-migrate: true
+    out-of-order: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: false
+      max-poll-records: 20     # Notifications can be batched
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    listener:
+      ack-mode: MANUAL_IMMEDIATE
+      concurrency: 2
+
+  # Email — AWS SES (Mumbai region)
+  mail:
+    host: ${MAIL_HOST:email-smtp.ap-south-1.amazonaws.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    from: ${MAIL_FROM:no-reply@investrac.in}
+    enabled: ${MAIL_ENABLED:false}    # Disabled in dev — set true in prod
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 3000
+      mail.smtp.writetimeout: 5000
+
+  # Redis
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  # Async thread pool for email/push delivery
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 20
+        queue-capacity: 100
+      thread-name-prefix: notif-async-
+
+# Firebase
+spring.fcm:
+  enabled: ${FCM_ENABLED:false}     # Disabled in dev — set true in prod
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:firebase-service-account.json}
+
+# JWT public key
+security:
+  jwt:
+    public-key: ${JWT_PUBLIC_KEY}
+
+# Eureka
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_USER:eureka-admin}:${EUREKA_PASSWORD:eureka-secret-2024}@${EUREKA_HOST:localhost}:8761/eureka/
+    registry-fetch-interval-seconds: 5
+  instance:
+    prefer-ip-address: true
+
+# Admin
+spring.boot.admin.client:
+  url: http://${ADMIN_SERVER_HOST:localhost}:9090
+  username: ${ADMIN_USER:admin}
+  password: ${ADMIN_PASSWORD:admin-secret}
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://${ZIPKIN_HOST:localhost}:9411/api/v2/spans
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# SpringDoc
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+# Logging
+logging:
+  level:
+    com.investrac: DEBUG
+    org.springframework.kafka: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-}/%X{spanId:-}] [%thread] %-5level %logger{36} - %msg%n"

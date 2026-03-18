@@ -1,0 +1,57 @@
+package com.investrac.account.outbox;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.Instant;
+import java.util.List;
+
+@Service @Slf4j @RequiredArgsConstructor
+public class AccountOutboxService {
+
+    private final AccountOutboxRepository      outboxRepository;
+    private final KafkaTemplate<String,String> kafkaTemplate;
+    private final ObjectMapper                 objectMapper;
+
+    /** Must be called INSIDE an existing @Transactional */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void publish(String topic, Object event) {
+        try {
+            outboxRepository.save(AccountOutboxEvent.builder()
+                .topic(topic)
+                .payload(objectMapper.writeValueAsString(event))
+                .build());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Outbox serialization failed", e);
+        }
+    }
+
+    /** Runs every 5 seconds — sends PENDING events to Kafka */
+    @Scheduled(fixedDelay = 5000)
+    @Transactional
+    public void publishPending() {
+        List<AccountOutboxEvent> pending = outboxRepository
+            .findByStatusAndRetryCountLessThan(AccountOutboxEvent.Status.PENDING, 3);
+
+        pending.forEach(ev -> {
+            try {
+                kafkaTemplate.send(ev.getTopic(), ev.getPayload()).get();
+                ev.setStatus(AccountOutboxEvent.Status.PUBLISHED);
+                ev.setPublishedAt(Instant.now());
+            } catch (Exception e) {
+                log.error("Outbox publish failed id={}: {}", ev.getId(), e.getMessage());
+                ev.setRetryCount(ev.getRetryCount() + 1);
+                ev.setLastError(e.getMessage());
+                if (ev.getRetryCount() >= 3)
+                    ev.setStatus(AccountOutboxEvent.Status.FAILED);
+            }
+            outboxRepository.save(ev);
+        });
+    }
+}
