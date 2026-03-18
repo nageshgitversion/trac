@@ -122,7 +122,7 @@ services:
     container_name: investrac-mysql
     networks: [investrac-network]
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
     volumes:
