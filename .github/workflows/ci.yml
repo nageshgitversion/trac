@@ -135,7 +135,8 @@ jobs:
 
       - name: Build JAR
         run: |
-          # Build common deps first
+          # Install parent POM and common deps first
+          mvn install -N -DskipTests -q
           mvn install -pl common/common-dto,common/common-events,common/common-security -DskipTests -q
           # Build target service
           SERVICE_NAME=$(basename ${{ matrix.service }})

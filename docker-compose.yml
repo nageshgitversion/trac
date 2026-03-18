@@ -10,6 +10,7 @@ networks:
     driver: bridge
 
 volumes:
+  mysql-data:
   redis-data:
   kafka-data:
   zookeeper-data:
@@ -114,7 +115,27 @@ services:
       retries: 5
 
   # ─────────────────────────────────────────
-  # MYSQL — Auth DB
+  # MYSQL — shared database instance
+  # ─────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: investrac-mysql
+    networks: [investrac-network]
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ─────────────────────────────────────────
+  # ADMIN SERVER
   # ─────────────────────────────────────────
   admin-server:
     build:
@@ -215,9 +236,9 @@ services:
     networks: [investrac-network]
     ports:
       - "8081:8081"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       kafka:
@@ -225,7 +246,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -254,15 +275,15 @@ services:
     networks: [investrac-network]
     ports:
       - "8083:8083"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -285,9 +306,9 @@ services:
     networks: [investrac-network]
     ports:
       - "8084:8084"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
@@ -295,7 +316,7 @@ services:
       wallet-service:
         condition: service_started
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -323,15 +344,15 @@ services:
     networks: [investrac-network]
     ports:
       - "8086:8086"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -359,15 +380,15 @@ services:
     networks: [investrac-network]
     ports:
       - "8087:8087"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -396,15 +417,15 @@ services:
     networks: [investrac-network]
     ports:
       - "8085:8085"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -432,15 +453,15 @@ services:
     networks: [investrac-network]
     ports:
       - "8088:8088"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -457,7 +478,7 @@ services:
       retries: 5
 
   # ─────────────────────────────────────────
-  # MYSQL — User DB  (must be defined BEFORE user-service)
+  # USER SERVICE
   # ─────────────────────────────────────────
   user-service:
     build:
@@ -468,15 +489,15 @@ services:
     networks: [investrac-network]
     ports:
       - "8082:8082"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
+      mysql:
+        condition: service_healthy
       kafka:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      DB_HOST: host.docker.internal
+      DB_HOST: mysql
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD:-root}
       EUREKA_HOST: eureka-server
@@ -492,7 +513,3 @@ services:
       interval: 15s
       timeout: 10s
       retries: 5
-
-  # ─────────────────────────────────────────
-  # MYSQL — AI DB
-  # ─────────────────────────────────────────

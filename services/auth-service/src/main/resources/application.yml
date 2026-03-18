@@ -24,6 +24,7 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
+      initialization-fail-timeout: 0   # Allow lazy pool init so the app starts even if DB is momentarily unavailable
 
   jpa:
     hibernate:
