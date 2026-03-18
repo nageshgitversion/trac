@@ -49,7 +49,10 @@ spec:
             - name: SERVER_PORT
               value: "8085"
             - name: DB_HOST
-              value: "mysql-account"
+              valueFrom:
+                configMapKeyRef:
+                  name: investrac-config
+                  key: DB_HOST
             - name: DB_USER
               valueFrom:
                 configMapKeyRef:

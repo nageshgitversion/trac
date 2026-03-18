@@ -16,8 +16,8 @@
 #      mysql> FLUSH PRIVILEGES;
 #
 # Notes:
-#   - "host.docker.internal" resolves to the host machine from
-#     inside Docker containers (Docker Desktop on macOS/Windows).
+#   - No MySQL container is started; services connect directly
+#     to the host MySQL via "host.docker.internal".
 #   - On Linux, the extra_hosts entry maps it to host-gateway.
 #   - Databases are auto-created via "createDatabaseIfNotExist=true"
 #     in each service's JDBC URL.
@@ -28,26 +28,22 @@ name: investrac
 services:
 
   # ─────────────────────────────────────────
-  # Replace Docker MySQL with a lightweight
-  # health-check container that validates
-  # your local MySQL is reachable.
+  # Disable Docker MySQL — not needed when
+  # using a local MySQL installation.
   # ─────────────────────────────────────────
   mysql:
     image: busybox:latest
-    container_name: investrac-mysql-check
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: sh -c "echo 'Waiting for local MySQL on host...'; while ! nc -z host.docker.internal 3306; do sleep 2; done; echo 'Local MySQL is reachable'; sleep infinity"
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z host.docker.internal 3306"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 5s
+    container_name: investrac-mysql-noop
+    entrypoint: ["true"]
+    restart: "no"
     volumes: !reset []
     ports: !reset []
     environment:
       MYSQL_ROOT_PASSWORD: unused
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
+      interval: 1s
+      retries: 1
 
   # ─────────────────────────────────────────
   # AUTH SERVICE — use local MySQL
@@ -55,7 +51,7 @@ services:
   auth-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       eureka-server:
         condition: service_healthy
       kafka:
@@ -73,7 +69,7 @@ services:
   wallet-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       kafka:
         condition: service_healthy
       eureka-server:
@@ -89,7 +85,7 @@ services:
   transaction-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       kafka:
         condition: service_healthy
       eureka-server:
@@ -107,7 +103,7 @@ services:
   portfolio-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       kafka:
         condition: service_healthy
       eureka-server:
@@ -123,7 +119,7 @@ services:
   ai-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       kafka:
         condition: service_healthy
       eureka-server:
@@ -139,7 +135,7 @@ services:
   account-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       kafka:
         condition: service_healthy
       eureka-server:
@@ -155,7 +151,7 @@ services:
   notification-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       kafka:
         condition: service_healthy
       eureka-server:
@@ -171,7 +167,7 @@ services:
   user-service:
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    depends_on:
+    depends_on: !override
       kafka:
         condition: service_healthy
       eureka-server:

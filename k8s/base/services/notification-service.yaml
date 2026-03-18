@@ -49,7 +49,10 @@ spec:
             - name: SERVER_PORT
               value: "8088"
             - name: DB_HOST
-              value: "mysql-notification"
+              valueFrom:
+                configMapKeyRef:
+                  name: investrac-config
+                  key: DB_HOST
             - name: DB_USER
               valueFrom:
                 configMapKeyRef:
