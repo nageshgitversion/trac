@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { NgClass } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -144,7 +144,8 @@ export class LoginComponent {
     private fb:          FormBuilder,
     private authService: AuthService,
     private toastService:ToastService,
-    private router:      Router
+    private router:      Router,
+    private route:       ActivatedRoute
   ) {
     this.form = this.fb.group({
       email:    ['', [Validators.required, Validators.email]],
@@ -164,7 +165,8 @@ export class LoginComponent {
         this.loading.set(false);
         if (res.success) {
           this.toastService.success(`Welcome back, ${res.data?.user.name}!`);
-          this.router.navigate(['/home']);
+          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/home';
+          this.router.navigateByUrl(returnUrl);
         } else {
           this.errorMsg.set(res.message || 'Login failed. Please try again.');
         }

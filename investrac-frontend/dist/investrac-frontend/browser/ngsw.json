@@ -1,0 +1,123 @@
+{
+  "configVersion": 1,
+  "timestamp": 1773845324311,
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/chunk-DNKGIIYI.js",
+        "/chunk-DYTDY6K6.js",
+        "/chunk-F3IRDWQ3.js",
+        "/chunk-HETUXI4V.js",
+        "/chunk-IDOJ465G.js",
+        "/chunk-LNTPLZMI.js",
+        "/chunk-OVISPID5.js",
+        "/chunk-Q5QECBKZ.js",
+        "/chunk-QGHRW6JC.js",
+        "/chunk-R6HYHCT2.js",
+        "/chunk-SK7XFWA5.js",
+        "/chunk-TLGCWV2M.js",
+        "/chunk-TPSFARHT.js",
+        "/chunk-TWKZKYET.js",
+        "/chunk-VO5CVMHZ.js",
+        "/chunk-WI4XAFH5.js",
+        "/chunk-WYIPY2LB.js",
+        "/index.html",
+        "/main.js",
+        "/manifest.webmanifest",
+        "/polyfills.js",
+        "/styles.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [
+    {
+      "name": "api-freshness",
+      "patterns": [
+        "\\/api\\/transactions\\/recent",
+        "\\/api\\/wallet\\/current"
+      ],
+      "strategy": "freshness",
+      "maxSize": 10,
+      "maxAge": 300000,
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "version": 1
+    },
+    {
+      "name": "api-performance",
+      "patterns": [
+        "\\/api\\/portfolio\\/summary",
+        "\\/api\\/notifications\\/unread-count"
+      ],
+      "strategy": "performance",
+      "maxSize": 10,
+      "maxAge": 600000,
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "version": 1
+    }
+  ],
+  "hashTable": {
+    "/chunk-DNKGIIYI.js": "485116605e4d119aef8afe96d321f0d5f20a645b",
+    "/chunk-DYTDY6K6.js": "7bbf8c56b612710876982ac149f90dc8e45f8f97",
+    "/chunk-F3IRDWQ3.js": "d8f0a90796d10c593e45e7001dbc1a2d56517040",
+    "/chunk-HETUXI4V.js": "faaa67228ee1c7863a8b752173c19fa7e0ec5a6b",
+    "/chunk-IDOJ465G.js": "85c877b488f3e4cc5aa7745be4da779d076393a8",
+    "/chunk-LNTPLZMI.js": "8b579823c8c839e4b1381f00e7754c3c4d3aa3db",
+    "/chunk-OVISPID5.js": "0e0d69c6627d93cbf18f593d8af47ee9dcff3701",
+    "/chunk-Q5QECBKZ.js": "f090cea6bf4b329946e2be8fcafa7785826e5f9a",
+    "/chunk-QGHRW6JC.js": "6d1a480606e68d7c650ba1066b385acdbccf13b7",
+    "/chunk-R6HYHCT2.js": "0d6762364d3b8e04d51aebc8bf6d3fa26ffe73b3",
+    "/chunk-SK7XFWA5.js": "a671d3eed3e58551dd7a6bbccf9e541203af8e29",
+    "/chunk-TLGCWV2M.js": "249c8fdefedd083ecac68996adbe02a01809f984",
+    "/chunk-TPSFARHT.js": "77a20451410e3e4f43e731a2c2c514f461cdbe8e",
+    "/chunk-TWKZKYET.js": "92cb3e34d144b9febfb8e7542b6134acd7e50b41",
+    "/chunk-VO5CVMHZ.js": "1b4c3f62b6cbbb2ac5cf758f06f123f8596bec86",
+    "/chunk-WI4XAFH5.js": "0d26ad221cde52e4cdb8f23d161889de08757961",
+    "/chunk-WYIPY2LB.js": "e7a2a93ba4de5576c207218a37b797da5b1e673d",
+    "/index.html": "89baeb6255478802d21c6f73358d2eac109e49bf",
+    "/main.js": "f8479f13164e2485e4ba9d242df62aa77e79ee50",
+    "/manifest.webmanifest": "3514307a0f65d090e5cc54cfe023673b23d50f87",
+    "/polyfills.js": "7418daf88726f005b00815e970a8c6c6bfaeeb66",
+    "/styles.css": "6ab9a73936bf851e2c3120b41a3939ba146535a2"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\.[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*__[^/]*\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}

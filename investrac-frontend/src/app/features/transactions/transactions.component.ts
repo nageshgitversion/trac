@@ -7,7 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { ToastComponent } from '../../shared/components/toast/toast.component';
 import { InrFormatPipe } from '../../shared/pipes/inr-format.pipe';
 import { RelativeDatePipe } from '../../shared/pipes/relative-date.pipe';
-import { Transaction, TransactionType } from '../../core/models/transaction.model';
+import { Transaction, TransactionType, MonthSummary } from '../../core/models/transaction.model';
 import { PagedResponse } from '../../core/models/api-response.model';
 
 const CATEGORIES: Record<TransactionType, string[]> = {
@@ -203,7 +203,7 @@ export class TransactionsComponent implements OnInit {
 
   transactions = signal<Transaction[]>([]);
   page         = signal<PagedResponse<Transaction>>({ content:[], pageNumber:0, pageSize:20, totalElements:0, totalPages:0, first:true, last:true, empty:true });
-  summary      = signal<any>(null);
+  summary      = signal<MonthSummary | null>(null);
   loading      = signal(false);
   activeType   = signal<string>('ALL');
   openSheet    = signal(false);
@@ -256,7 +256,8 @@ export class TransactionsComponent implements OnInit {
 
   private loadSummary(): void {
     this.txService.getMonthlySummary().subscribe({
-      next: res => { if (res.success) this.summary.set(res.data); }
+      next: res => { if (res.success && res.data) this.summary.set(res.data); },
+      error: () => {}
     });
   }
 
