@@ -288,7 +288,7 @@ public class AiService {
     private String buildFallbackAnswer(String question, UserContext ctx) {
         log.warn("Using fallback answer (Claude API unavailable)");
         return String.format(
-            "I'm unable to connect to the AI advisor right now. "
+            "The AI advisor is currently unavailable. "
             + "Your portfolio is currently valued at ₹%s with ₹%s free in your wallet this month. "
             + "Please try again in a few minutes.",
             fmt(ctx.portfolioValue()),

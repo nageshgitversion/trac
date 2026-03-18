@@ -194,8 +194,13 @@ public class PromptBuilder {
         if (value == null) return "0";
         long v = value.longValue();
         if (v >= 10_000_000) return String.format("%.1fCr", v / 10_000_000.0);
-        if (v >= 100_000)    return String.format("%.1fL",  v / 100_000.0);
-        if (v >= 1_000)      return String.format("%.0fK",  v / 1_000.0);
+        if (v >= 1_000_000)  return String.format("%.1fL",  v / 100_000.0);
+        if (v >= 1_000) {
+            double kVal = v / 1_000.0;
+            return kVal == Math.floor(kVal)
+                ? String.format("%.0fK", kVal)
+                : String.format("%.1fK", kVal);
+        }
         return String.valueOf(v);
     }
 }

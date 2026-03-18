@@ -3,6 +3,7 @@ package com.investrac.notification.consumer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.investrac.common.events.*;
 import com.investrac.notification.entity.Notification.NotificationType;
+import com.investrac.notification.service.EmailService;
 import com.investrac.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ import java.util.Map;
 public class NotificationEventConsumer {
 
     private final NotificationService notificationService;
+    private final EmailService        emailService;
     private final ObjectMapper        objectMapper;
 
     // ── Transaction Completed ─────────────────────────────────
@@ -196,7 +198,6 @@ public class NotificationEventConsumer {
             // Only notify if portfolio changed meaningfully (>1% change)
             if (event.changePercent() == null ||
                 event.changePercent().abs().compareTo(java.math.BigDecimal.ONE) < 0) {
-                ack.acknowledge();
                 return;
             }
 
@@ -233,17 +234,15 @@ public class NotificationEventConsumer {
 
             log.info("Notification: welcome new user userId={}", event.userId());
 
-            // 1. Send welcome notification with OTP
-            notificationService.send(
-                event.userId(),
+            // 1. Send OTP verification email directly
+            emailService.sendEmail(
+                event.email(),
                 "[INVESTRAC] Verify Your Email",
                 "Hello " + event.name() + ",\n\n" +
                 "Your email verification OTP is: " + event.otp() + "\n\n" +
                 "This OTP expires in 10 minutes.\n\n" +
                 "Welcome to INVESTRAC!\n" +
-                "Team INVESTRAC",
-                NotificationType.WELCOME,
-                null
+                "Team INVESTRAC"
             );
 
             // 2. Send welcome push notification
@@ -256,6 +255,34 @@ public class NotificationEventConsumer {
             );
         } catch (Exception e) {
             log.error("Error processing UserRegisteredEvent: {}", e.getMessage(), e);
+        } finally {
+            ack.acknowledge();
+        }
+    }
+
+    // ── Password Reset Requested ──────────────────────────────
+    @KafkaListener(
+        topics    = PasswordResetRequestedEvent.TOPIC,
+        groupId   = "${spring.kafka.consumer.group-id:notification-service-group}",
+        concurrency = "1"
+    )
+    public void onPasswordResetRequested(ConsumerRecord<String, String> record, Acknowledgment ack) {
+        try {
+            PasswordResetRequestedEvent event = objectMapper.readValue(
+                record.value(), PasswordResetRequestedEvent.class);
+
+            log.info("Notification: password reset OTP userId={}", event.userId());
+
+            emailService.sendEmail(
+                event.email(),
+                "[INVESTRAC] Password Reset OTP",
+                "Your password reset OTP is: " + event.otp() + "\n\n" +
+                "This OTP expires in 10 minutes.\n\n" +
+                "If you did not request a password reset, please ignore this email.\n\n" +
+                "Team INVESTRAC"
+            );
+        } catch (Exception e) {
+            log.error("Error processing PasswordResetRequestedEvent: {}", e.getMessage(), e);
         } finally {
             ack.acknowledge();
         }

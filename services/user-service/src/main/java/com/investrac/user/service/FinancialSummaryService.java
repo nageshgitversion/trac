@@ -116,13 +116,14 @@ public class FinancialSummaryService {
 
     private WalletData fetchWalletData(Long userId) {
         try {
-            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map> resp = restTemplate.exchange(
                 walletServiceUrl + "/api/wallet/current",
-                HttpMethod.valueOf("GET"),
+                HttpMethod.GET,
                 buildRequest(userId),
-                new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+                Map.class
             );
-            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            if (resp != null && resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> data = (Map<String, Object>) resp.getBody().get("data");
                 if (data != null) {
@@ -141,13 +142,14 @@ public class FinancialSummaryService {
 
     private PortfolioData fetchPortfolioData(Long userId) {
         try {
-            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map> resp = restTemplate.exchange(
                 portfolioServiceUrl + "/api/portfolio/summary",
-                HttpMethod.valueOf("GET"),
+                HttpMethod.GET,
                 buildRequest(userId),
-                new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+                Map.class
             );
-            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            if (resp != null && resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> data = (Map<String, Object>) resp.getBody().get("data");
                 if (data != null) {
@@ -167,13 +169,14 @@ public class FinancialSummaryService {
 
     private AccountData fetchAccountData(Long userId) {
         try {
-            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+            @SuppressWarnings("unchecked")
+            ResponseEntity<Map> resp = restTemplate.exchange(
                 accountServiceUrl + "/api/accounts",
-                HttpMethod.valueOf("GET"),
+                HttpMethod.GET,
                 buildRequest(userId),
-                new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+                Map.class
             );
-            if (resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
+            if (resp != null && resp.getStatusCode().is2xxSuccessful() && resp.getBody() != null) {
                 @SuppressWarnings("unchecked")
                 Map<String, Object> data = (Map<String, Object>) resp.getBody().get("data");
                 if (data != null) {

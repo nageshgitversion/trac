@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -35,7 +36,11 @@ class PriceSyncServiceTest {
     }
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Drain any leftover requests accumulated from previous tests
+        while (mockServer.takeRequest(0, TimeUnit.MILLISECONDS) != null) {
+            // discard
+        }
         String baseUrl = mockServer.url("/").toString();
         // Point both MF and Yahoo to same mock server for simplicity
         priceSyncService = new PriceSyncService(

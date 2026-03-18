@@ -9,6 +9,7 @@ import com.investrac.auth.exception.AuthException;
 import com.investrac.auth.outbox.OutboxService;
 import com.investrac.auth.repository.*;
 import com.investrac.common.dto.ErrorCodes;
+import com.investrac.common.events.PasswordResetRequestedEvent;
 import com.investrac.common.events.UserRegisteredEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -194,7 +195,10 @@ public class AuthService {
         userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
             String otp = generateOtp();
             saveOtp(user.getEmail(), otp, OtpVerification.OtpPurpose.PASSWORD_RESET);
-            // TODO: publish via outbox to send email
+            outboxService.publish(
+                PasswordResetRequestedEvent.TOPIC,
+                new PasswordResetRequestedEvent(user.getId(), user.getEmail(), otp, Instant.now())
+            );
             log.info("Password reset OTP generated for userId: {}", user.getId());
         });
     }

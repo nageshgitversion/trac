@@ -67,6 +67,7 @@ public class Notification {
         PORTFOLIO_SYNCED,
         AI_INSIGHT,
         WELCOME,
+        PASSWORD_RESET,
         GENERAL
     }
 
