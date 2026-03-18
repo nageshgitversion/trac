@@ -3,7 +3,6 @@ package com.investrac.gateway.fallback;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -20,43 +19,49 @@ import java.util.Map;
 @Slf4j
 public class GatewayFallbackController {
 
-    @GetMapping("/auth")
+    @RequestMapping("/auth")
     public Mono<ResponseEntity<Map<String, Object>>> authFallback() {
         log.error("auth-service is unavailable — circuit open");
         return Mono.just(serviceUnavailable("auth-service", "WLTH-5001"));
     }
 
-    @GetMapping("/wallet")
+    @RequestMapping("/user")
+    public Mono<ResponseEntity<Map<String, Object>>> userFallback() {
+        log.error("user-service is unavailable — circuit open");
+        return Mono.just(serviceUnavailable("user-service", "WLTH-5008"));
+    }
+
+    @RequestMapping("/wallet")
     public Mono<ResponseEntity<Map<String, Object>>> walletFallback() {
         log.error("wallet-service is unavailable — circuit open");
         return Mono.just(serviceUnavailable("wallet-service", "WLTH-5002"));
     }
 
-    @GetMapping("/transaction")
+    @RequestMapping("/transaction")
     public Mono<ResponseEntity<Map<String, Object>>> transactionFallback() {
         log.error("transaction-service is unavailable — circuit open");
         return Mono.just(serviceUnavailable("transaction-service", "WLTH-5003"));
     }
 
-    @GetMapping("/portfolio")
+    @RequestMapping("/portfolio")
     public Mono<ResponseEntity<Map<String, Object>>> portfolioFallback() {
         log.error("portfolio-service is unavailable — circuit open");
         return Mono.just(serviceUnavailable("portfolio-service", "WLTH-5004"));
     }
 
-    @GetMapping("/account")
+    @RequestMapping("/account")
     public Mono<ResponseEntity<Map<String, Object>>> accountFallback() {
         log.error("account-service is unavailable — circuit open");
         return Mono.just(serviceUnavailable("account-service", "WLTH-5005"));
     }
 
-    @GetMapping("/ai")
+    @RequestMapping("/ai")
     public Mono<ResponseEntity<Map<String, Object>>> aiFallback() {
         log.error("ai-service is unavailable — circuit open");
         return Mono.just(serviceUnavailable("ai-service", "WLTH-5006"));
     }
 
-    @GetMapping("/notification")
+    @RequestMapping("/notification")
     public Mono<ResponseEntity<Map<String, Object>>> notificationFallback() {
         log.error("notification-service is unavailable — circuit open");
         return Mono.just(serviceUnavailable("notification-service", "WLTH-5007"));
