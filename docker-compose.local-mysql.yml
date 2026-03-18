@@ -1,0 +1,182 @@
+# ═══════════════════════════════════════════════════════════════
+# INVESTRAC — Local MySQL Override
+# ═══════════════════════════════════════════════════════════════
+# Use this override to connect services to your LOCAL MySQL
+# instead of the Docker MySQL container.
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.local-mysql.yml up -d
+#
+# Prerequisites:
+#   1. MySQL 8.0+ installed and running locally on port 3306
+#   2. A root (or equivalent) user accessible from Docker containers
+#   3. Grant permissions:
+#      mysql> CREATE USER 'root'@'%' IDENTIFIED BY 'root';
+#      mysql> GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+#      mysql> FLUSH PRIVILEGES;
+#
+# Notes:
+#   - "host.docker.internal" resolves to the host machine from
+#     inside Docker containers (Docker Desktop on macOS/Windows).
+#   - On Linux, the extra_hosts entry maps it to host-gateway.
+#   - Databases are auto-created via "createDatabaseIfNotExist=true"
+#     in each service's JDBC URL.
+# ═══════════════════════════════════════════════════════════════
+
+name: investrac
+
+services:
+
+  # ─────────────────────────────────────────
+  # Replace Docker MySQL with a lightweight
+  # health-check container that validates
+  # your local MySQL is reachable.
+  # ─────────────────────────────────────────
+  mysql:
+    image: busybox:latest
+    container_name: investrac-mysql-check
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: sh -c "echo 'Waiting for local MySQL on host...'; while ! nc -z host.docker.internal 3306; do sleep 2; done; echo 'Local MySQL is reachable'; sleep infinity"
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z host.docker.internal 3306"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    volumes: !reset []
+    ports: !reset []
+    environment:
+      MYSQL_ROOT_PASSWORD: unused
+
+  # ─────────────────────────────────────────
+  # AUTH SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  auth-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  # ─────────────────────────────────────────
+  # WALLET SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  wallet-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  # ─────────────────────────────────────────
+  # TRANSACTION SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  transaction-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      wallet-service:
+        condition: service_started
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  # ─────────────────────────────────────────
+  # PORTFOLIO SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  portfolio-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  # ─────────────────────────────────────────
+  # AI SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  ai-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  # ─────────────────────────────────────────
+  # ACCOUNT SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  account-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  # ─────────────────────────────────────────
+  # NOTIFICATION SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  notification-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
+
+  # ─────────────────────────────────────────
+  # USER SERVICE — use local MySQL
+  # ─────────────────────────────────────────
+  user-service:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      DB_HOST: host.docker.internal
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD:-root}
