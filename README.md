@@ -72,6 +72,10 @@ Angular PWA → Nginx → API Gateway (8080)
                       Kafka ←→ SAGA choreography
 ```
 
+## Kubernetes & Docker Image Flow
+For a detailed explanation of how Docker images are built, pushed to Docker Hub,
+and pulled by Kubernetes, see [K8S_DOCKER_IMAGE_FLOW.md](K8S_DOCKER_IMAGE_FLOW.md).
+
 ## Security Notes
 - Never commit `.env` to Git
 - JWT private key only in auth-service
