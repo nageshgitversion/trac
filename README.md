@@ -72,6 +72,12 @@ Angular PWA → Nginx → API Gateway (8080)
                       Kafka ←→ SAGA choreography
 ```
 
+## Deployment Platforms
+Looking for a cloud platform to deploy INVESTRAC? See the
+[Deployment Platform Guide](DEPLOYMENT_PLATFORMS.md) for a comparison of
+AWS, Google Cloud, Azure, DigitalOcean, Railway, and more — with setup
+steps and cost estimates.
+
 ## Security Notes
 - Never commit `.env` to Git
 - JWT private key only in auth-service
