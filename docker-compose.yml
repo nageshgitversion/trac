@@ -203,6 +203,8 @@ services:
     depends_on:
       eureka-server:
         condition: service_healthy
+      auth-service:
+        condition: service_healthy
     environment:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
