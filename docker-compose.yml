@@ -80,6 +80,10 @@ services:
     image: provectuslabs/kafka-ui:v0.7.1
     container_name: investrac-kafka-ui
     networks: [investrac-network]
+    deploy:
+      resources:
+        limits:
+          memory: 256m
     depends_on:
       kafka:
         condition: service_healthy
@@ -336,6 +340,12 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis-local-secret}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       ZIPKIN_HOST: zipkin
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   # ─────────────────────────────────────────
   # TRANSACTION SERVICE
