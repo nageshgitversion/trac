@@ -277,7 +277,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512m
+          memory: 768m
     depends_on:
       mysql:
         condition: service_healthy
