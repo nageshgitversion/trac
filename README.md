@@ -72,6 +72,19 @@ Angular PWA → Nginx → API Gateway (8080)
                       Kafka ←→ SAGA choreography
 ```
 
+## Deploy to AWS EC2
+
+See [EC2_DEPLOYMENT.md](EC2_DEPLOYMENT.md) for a full step-by-step guide.  
+The EC2 deployment uses the **MySQL Docker container** (no local MySQL required)
+and applies the `docker-compose.ec2.yml` production override:
+
+```bash
+# On your EC2 instance
+cp .env.ec2.example .env
+# Edit .env — set EC2_HOST, passwords, JWT keys, etc.
+docker compose -f docker-compose.yml -f docker-compose.ec2.yml up -d
+```
+
 ## Security Notes
 - Never commit `.env` to Git
 - JWT private key only in auth-service

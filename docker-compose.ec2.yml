@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════════════
+# INVESTRAC — AWS EC2 Production Override
+# ═══════════════════════════════════════════════════════════════
+# Apply on top of docker-compose.yml for EC2 deployments.
+#
+# Usage:
+#   docker-compose -f docker-compose.yml -f docker-compose.ec2.yml up -d
+#
+# What this override does:
+#   - Sets restart: always on every service (survive reboots/crashes)
+#   - Closes non-application ports so internal infra is not publicly reachable
+#     (Zookeeper, Kafka internals, Redis, MySQL raw port, Zipkin, Kafka UI)
+#   - Keeps only the ports that external clients legitimately need:
+#       9000 — API Gateway (primary entry point)
+#       9090 — Admin Server
+#       8761 — Eureka (optional; remove if not needed externally)
+# ═══════════════════════════════════════════════════════════════
+
+name: investrac
+
+services:
+
+  zookeeper:
+    restart: always
+
+  kafka:
+    restart: always
+    # Close the external Kafka port; EC2 security group should block 9092
+    # unless you need external Kafka access.
+    ports: !reset []
+
+  kafka-ui:
+    restart: always
+    # Kafka UI is internal — remove public exposure on EC2
+    ports: !reset []
+
+  redis:
+    restart: always
+    # Redis should never be exposed publicly
+    ports: !reset []
+
+  zipkin:
+    restart: always
+    # Zipkin is internal — remove public exposure on EC2
+    ports: !reset []
+
+  mysql:
+    restart: always
+    # MySQL port should never be exposed publicly on EC2
+    ports: !reset []
+
+  eureka-server:
+    restart: always
+
+  admin-server:
+    restart: always
+
+  api-gateway:
+    restart: always
+
+  auth-service:
+    restart: always
+
+  wallet-service:
+    restart: always
+
+  transaction-service:
+    restart: always
+
+  portfolio-service:
+    restart: always
+
+  ai-service:
+    restart: always
+
+  account-service:
+    restart: always
+
+  notification-service:
+    restart: always
+
+  user-service:
+    restart: always
