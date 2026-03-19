@@ -7,6 +7,14 @@ spring:
   application:
     name: auth-service
 
+  # Exclude load-balancer auto-configs that are not needed — auth-service does not
+  # make inter-service HTTP calls, so RestTemplate/RestClient load-balancing beans
+  # are unnecessary and cause noisy BeanPostProcessor warnings at startup.
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration
+      - org.springframework.cloud.loadbalancer.config.BlockingLoadBalancerClientAutoConfiguration
+
   # Config Server
   config:
     import: optional:configserver:http://${CONFIG_SERVER_USER:config-admin}:${CONFIG_SERVER_PASSWORD:config-secret}@${CONFIG_SERVER_HOST:localhost}:8888
@@ -27,6 +35,7 @@ spring:
       initialization-fail-timeout: 0   # Allow lazy pool init so the app starts even if DB is momentarily unavailable
 
   jpa:
+    open-in-view: false  # Disable lazy-loading in views — all DB access should happen in service/repository layer
     hibernate:
       ddl-auto: none     # Flyway manages schema — NEVER use create/create-drop in prod
     show-sql: false
