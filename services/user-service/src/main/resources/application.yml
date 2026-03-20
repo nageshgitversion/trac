@@ -9,7 +9,7 @@ spring:
     import: optional:configserver:http://${CONFIG_SERVER_USER:config-admin}:${CONFIG_SERVER_PASSWORD:config-secret}@${CONFIG_SERVER_HOST:localhost}:8888
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:3306/investrac_user?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata&createDatabaseIfNotExist=true
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/investrac_user?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata&createDatabaseIfNotExist=true
     username: ${DB_USER:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver

@@ -546,6 +546,8 @@ services:
       EUREKA_HOST: eureka-server
       CONFIG_SERVER_HOST: config-server
       KAFKA_SERVERS: kafka:29092
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis-local-secret}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY}
       ZIPKIN_HOST: zipkin
       MAIL_ENABLED: "false"
