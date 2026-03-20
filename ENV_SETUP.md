@@ -38,12 +38,14 @@ java -jar infrastructure/api-gateway/target/api-gateway-1.0.0-SNAPSHOT.jar &
 
 ### Database Configuration
 ```bash
-# MySQL connection
-DB_HOST=localhost              # Database host
+# Default: Docker MySQL (started by docker-compose up -d)
+# docker-compose.yml sets DB_HOST=mysql for all services automatically.
+# DB_HOST below is only used when running services outside Docker.
+DB_HOST=localhost              # Database host (docker-compose overrides to 'mysql')
 DB_PORT=3306                   # Database port
 DB_NAME=investrac              # Database name
-DB_USER=investrac              # Database username
-DB_PASSWORD=investrac123       # Database password
+DB_USER=root                   # Database username
+DB_PASSWORD=root               # Database password
 DB_DRIVER=com.mysql.cj.jdbc.Driver
 DB_POOL_SIZE=20                # Connection pool size
 DB_MAX_IDLE_TIME=900000        # Max idle time in ms
@@ -201,7 +203,8 @@ JWT_PUBLIC_KEY_PATH=keys/public.pem
 
 ### Run Docker Infrastructure
 ```bash
-# Start all services (MySQL, Kafka, Redis, Eureka, Zipkin, etc.)
+# Start all services (Docker MySQL, Kafka, Redis, Eureka, Zipkin, etc.)
+# MySQL runs inside Docker — no local installation required
 docker-compose up -d
 
 # View logs
@@ -210,7 +213,7 @@ docker-compose logs -f
 # Stop all services
 docker-compose down
 
-# Remove volumes (clean slate)
+# Remove volumes (clean slate — deletes MySQL data)
 docker-compose down -v
 ```
 
@@ -302,11 +305,14 @@ kill -9 <PID>
 
 ### Database Connection Failed
 ```bash
-# Check if MySQL is running
-mysql -h localhost -u investrac -p -e "SELECT 1;"
+# Check if Docker MySQL is running
+docker exec investrac-mysql mysqladmin status -u root -proot
 
-# Or with Docker
-docker exec investrac-mysql mysql -u investrac -p -e "SELECT 1;"
+# Or connect to Docker MySQL shell
+docker exec -it investrac-mysql mysql -u root -proot -e "SELECT 1;"
+
+# For local MySQL
+mysql -h localhost -u root -p -e "SELECT 1;"
 ```
 
 ### Local MySQL Not Reachable from Docker

@@ -14,23 +14,16 @@ chmod +x scripts/generate-jwt-keys.sh
 # Copy output to .env file
 ```
 
-### 2. Start Infrastructure
+### 2. Start Infrastructure (includes Docker MySQL)
 ```bash
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your values (defaults work out of the box with Docker MySQL)
 docker-compose up -d
 ```
+> **MySQL runs inside Docker** — no local MySQL installation needed.
+> Data is persisted in the `mysql-data` Docker volume.
 
-### 3. Use Local MySQL (Optional)
-If you prefer to use your own local MySQL instead of the Docker container:
-```bash
-# Start everything except MySQL — services connect to your local MySQL
-docker-compose -f docker-compose.yml -f docker-compose.local-mysql.yml up -d
-```
-> **Prerequisites:** MySQL 8.0+ running locally on port 3306 with a user
-> accessible from Docker. See [Local MySQL Setup](#local-mysql-setup) below.
-
-### 4. Start Services (in order)
+### 3. Start Services (in order)
 ```bash
 docker-compose up -d eureka-server
 docker-compose up -d config-server
@@ -78,17 +71,38 @@ Angular PWA → Nginx → API Gateway (8080)
 - All passwords BCrypt strength 12
 - Run OWASP check: `mvn verify -P security-check`
 
-## Local MySQL Setup
+## Database Setup
 
-If you want to connect services to your **local MySQL** instead of the Docker container:
+### Default: Docker MySQL (Recommended)
+The default `docker-compose up -d` starts a MySQL 8.0 container alongside
+all services. No local MySQL installation is required.
 
-### Option A: Services in Docker, MySQL on Host
-Use the provided override file — no MySQL container is needed:
+- **Container:** `investrac-mysql` (image: `mysql:8.0`)
+- **Credentials:** `root` / `root` (override via `DB_USER` / `DB_PASSWORD` in `.env`)
+- **Data:** Persisted in the `mysql-data` Docker volume (survives restarts)
+- **Databases:** Created automatically per service via `createDatabaseIfNotExist=true`
+
+```bash
+# Start everything (MySQL + Kafka + Redis + services)
+docker-compose up -d
+
+# Verify MySQL is healthy
+docker exec investrac-mysql mysqladmin status -u root -proot
+
+# Connect to MySQL shell
+docker exec -it investrac-mysql mysql -u root -proot
+```
+
+### Optional: Local MySQL Instead of Docker MySQL
+If you prefer to use your own local MySQL installation:
+
+#### Option A: Services in Docker, MySQL on Host
+Use the provided override file — disables the Docker MySQL container:
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose.local-mysql.yml up -d
 ```
-The override removes the MySQL container dependency and points all services
-to `host.docker.internal` so they connect to your host MySQL directly.
+The override points all services to `host.docker.internal` so they connect
+to your host MySQL directly.
 
 **Prepare your local MySQL:**
 ```sql
@@ -101,7 +115,7 @@ FLUSH PRIVILEGES;
 > Databases (`investrac_auth`, `investrac_user`, etc.) are created
 > automatically via `createDatabaseIfNotExist=true` in the JDBC URL.
 
-### Option B: Run Services Locally (No Docker for Services)
+#### Option B: Run Services Locally (No Docker for Services)
 The `application.yml` files already default to `localhost`:
 ```bash
 source ./scripts/load-env.sh   # loads .env (DB_HOST=localhost)
@@ -109,7 +123,7 @@ mvn clean install -DskipTests
 java -jar services/auth-service/target/auth-service-1.0.0-SNAPSHOT.jar
 ```
 
-### Option C: Kubernetes (Dev Overlay)
+#### Option C: Kubernetes (Dev Overlay)
 The dev overlay sets `DB_HOST=localhost` via ConfigMap, so services
 connect to a local MySQL without needing separate MySQL K8s manifests:
 ```bash
@@ -118,7 +132,7 @@ kubectl apply -k k8s/overlays/dev
 To point at a different host, patch `DB_HOST` in the dev overlay's
 `configMapGenerator`.
 
-### Linux Note
+#### Linux Note
 On Linux, `host.docker.internal` is mapped via `extra_hosts` in the override file.
 If you have issues, ensure your MySQL `bind-address` is set to `0.0.0.0`
 in `/etc/mysql/mysql.conf.d/mysqld.cnf` and restart MySQL:
