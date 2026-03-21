@@ -8,6 +8,14 @@ spring:
   config:
     import: "optional:configserver:http://${CONFIG_SERVER_HOST:localhost}:8888"
 
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
   cloud:
     gateway:
       globalcors:
@@ -21,19 +29,6 @@ spring:
             exposed-headers: ["Authorization","X-Trace-Id"]
             allow-credentials: true
             max-age: 3600
-
-      # Default filters applied to every route
-      default-filters:
-        - name: Retry
-          args:
-            retries: 3
-            statuses: SERVICE_UNAVAILABLE,BAD_GATEWAY,GATEWAY_TIMEOUT,INTERNAL_SERVER_ERROR
-            methods: GET,POST,PUT,DELETE,PATCH
-            backoff:
-              firstBackoff: 200ms
-              maxBackoff: 2s
-              factor: 2
-              basedOnPreviousValue: false
 
       routes:
         - id: auth-service
@@ -135,58 +130,29 @@ eureka:
 
 resilience4j:
   circuitbreaker:
-    configs:
-      default:
-        sliding-window-size: 20
-        minimum-number-of-calls: 10
+    instances:
+      auth-service:
+        sliding-window-size: 10
         failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 5
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
         automatic-transition-from-open-to-half-open-enabled: true
-        slow-call-duration-threshold: 5s
-        slow-call-rate-threshold: 80
-    instances:
-      auth-service:
-        base-config: default
-      user-service:
-        base-config: default
       wallet-service:
-        base-config: default
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
       transaction-service:
-        base-config: default
-      account-service:
-        base-config: default
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
       portfolio-service:
-        base-config: default
+        sliding-window-size: 5
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 60s
       ai-service:
-        base-config: default
-        slow-call-duration-threshold: 30s
-        slow-call-rate-threshold: 90
-      notification-service:
-        base-config: default
-  timelimiter:
-    configs:
-      default:
-        timeout-duration: 10s
-        cancel-running-future: true
-    instances:
-      auth-service:
-        base-config: default
-      user-service:
-        base-config: default
-      wallet-service:
-        base-config: default
-      transaction-service:
-        base-config: default
-      account-service:
-        base-config: default
-      portfolio-service:
-        base-config: default
-      ai-service:
-        base-config: default
-        timeout-duration: 30s
-      notification-service:
-        base-config: default
+        sliding-window-size: 5
+        failure-rate-threshold: 70
+        wait-duration-in-open-state: 60s
 
 security:
   jwt:
