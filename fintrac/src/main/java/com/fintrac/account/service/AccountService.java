@@ -81,11 +81,13 @@ public class AccountService {
                 .divide(pow.subtract(BigDecimal.ONE), 2, RoundingMode.HALF_UP);
             maturityAmount = monthlyEmi.multiply(BigDecimal.valueOf(n));
         } else {
-            // Compound interest (quarterly for FD/RD, simple for SIP)
+            // Compound interest quarterly: A = P * (1 + r/4)^(4 * n/12)
             BigDecimal rAnnual = acc.getInterestRate().divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+            // Number of quarters = n months / 3, kept as precise double then rounded to nearest quarter
+            int quarters = (int) Math.round(n / 3.0);
             maturityAmount = p.multiply(
                 BigDecimal.ONE.add(rAnnual.divide(BigDecimal.valueOf(4), 10, RoundingMode.HALF_UP))
-                .pow((int)(n / 3.0), new MathContext(10))
+                .pow(quarters, new MathContext(10))
             ).setScale(2, RoundingMode.HALF_UP);
         }
 
